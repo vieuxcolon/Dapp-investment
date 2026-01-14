@@ -1,0 +1,6 @@
+{
+  "DAOToken": "0xYourDeployedTokenAddress",
+  "Treasury": "0xYourDeployedTreasuryAddress",
+  "Governance": "0xYourDeployedGovernanceAddress",
+  "ProposalExecutor": "0xYourDeployedExecutorAddress"
+}
