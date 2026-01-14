@@ -1,4 +1,4 @@
-FROM node:20-bullseye
+FROM node:24-bullseye
 
 WORKDIR /app/backend
 
@@ -8,5 +8,4 @@ RUN npm install
 COPY backend/ ./
 
 EXPOSE 8545
-
 CMD ["npx", "hardhat", "node"]
