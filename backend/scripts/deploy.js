@@ -1,26 +1,37 @@
+
+import fs from "fs";
+import hre from "hardhat";
+
 async function main() {
-  const [deployer] = await ethers.getSigners();
+  const [deployer] = await hre.ethers.getSigners();
   console.log("Deploying contracts with account:", deployer.address);
 
-  const DAOToken = await ethers.getContractFactory("DAOToken");
-  const daoToken = await DAOToken.deploy();
-  await daoToken.deployed();
-  console.log("DAOToken deployed to:", daoToken.address);
+  const DAOToken = await hre.ethers.deployContract("DAOToken");
+  await DAOToken.waitForDeployment();
 
-  const Treasury = await ethers.getContractFactory("Treasury");
-  const treasury = await Treasury.deploy();
-  await treasury.deployed();
-  console.log("Treasury deployed to:", treasury.address);
+  const Treasury = await hre.ethers.deployContract("Treasury");
+  await Treasury.waitForDeployment();
 
-  const Governance = await ethers.getContractFactory("Governance");
-  const governance = await Governance.deploy(daoToken.address, treasury.address);
-  await governance.deployed();
-  console.log("Governance deployed to:", governance.address);
+  const Governance = await hre.ethers.deployContract("Governance", [DAOToken.target, Treasury.target]);
+  await Governance.waitForDeployment();
 
-  const ProposalExecutor = await ethers.getContractFactory("ProposalExecutor");
-  const executor = await ProposalExecutor.deploy(governance.address, treasury.address);
-  await executor.deployed();
-  console.log("ProposalExecutor deployed to:", executor.address);
+  const ProposalExecutor = await hre.ethers.deployContract("ProposalExecutor", [Governance.target, Treasury.target]);
+  await ProposalExecutor.waitForDeployment();
+
+  // Write addresses to JSON
+  const addresses = {
+    DAOToken: DAOToken.target,
+    Governance: Governance.target,
+    Treasury: Treasury.target,
+    ProposalExecutor: ProposalExecutor.target
+  };
+
+  fs.writeFileSync(
+    "./frontend/src/contracts-address.json",
+    JSON.stringify(addresses, null, 2)
+  );
+
+  console.log("Contracts deployed and addresses saved to frontend/src/contracts-address.json");
 }
 
 main().catch((error) => {
