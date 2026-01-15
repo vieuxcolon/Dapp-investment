@@ -15,7 +15,6 @@
   },
   "devDependencies": {
     "hardhat": "3.3.0",
-    "@nomicfoundation/hardhat-network-helpers": "3.3.0",
     "chai": "4.3.7"
   },
   "engines": {
