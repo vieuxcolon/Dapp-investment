@@ -1,4 +1,3 @@
-
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
@@ -13,12 +12,11 @@ contract ProposalExecutor {
     event StartupFunded(uint256 proposalId, address startup, uint256 amount);
     event AssetTraded(uint256 proposalId, string tradeDetails);
 
-    constructor(address _governance, address payable _treasury) {
-        governance = Governance(_governance);
-        treasury = Treasury(_treasury); // payable address handled
+    constructor(Governance _governance, Treasury _treasury) {
+        governance = _governance;
+        treasury = _treasury;
     }
 
-    /// @notice Execute a passed proposal
     function executeProposal(uint256 _proposalId, address payable _recipient) external {
         Governance.Proposal storage proposal = governance.proposals(_proposalId);
         require(proposal.state == Governance.ProposalState.Active, "Proposal not active");
@@ -28,7 +26,6 @@ contract ProposalExecutor {
             treasury.transferFunds(_recipient, proposal.amount);
             emit StartupFunded(_proposalId, _recipient, proposal.amount);
         } else if (proposal.proposalType == Governance.ProposalType.AssetTrade) {
-            // Placeholder for trading logic
             emit AssetTraded(_proposalId, "Execute asset trade logic here");
         }
 
