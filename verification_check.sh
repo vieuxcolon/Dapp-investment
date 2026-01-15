@@ -1,107 +1,77 @@
 #!/bin/bash
 set -e
 
+REQUIRED_NODE_MAJOR=22
+REQUIRED_NODE_VERSION="22.10.0"
+
 echo "=========================================="
 echo "Verifying and remediating host environment"
 echo "=========================================="
 
 # ----------------------------
-# Helper functions
-# ----------------------------
-command_exists() {
-  command -v "$1" >/dev/null 2>&1
-}
-
-version_ge() {
-  # Compare two semantic versions: $1 >= $2
-  [ "$(printf '%s\n' "$2" "$1" | sort -V | head -n1)" = "$2" ]
-}
-
-# ----------------------------
-# 1. Clear apt/dpkg locks
+# 1. Check for other apt/dpkg processes
 # ----------------------------
 echo "[INFO] Checking for other apt/dpkg processes..."
-sudo fuser -vki /var/lib/dpkg/lock /var/lib/apt/lists/lock /var/cache/apt/archives/lock >/dev/null 2>&1 || true
-sudo dpkg --configure -a >/dev/null 2>&1 || true
+sudo fuser -v /var/lib/dpkg/lock || true
+sudo rm -f /var/lib/dpkg/lock
+sudo dpkg --configure -a
 echo "[INFO] apt/dpkg locks cleared. Continuing..."
 
 # ----------------------------
-# 2. Node.js v20.x
+# 2. Check Node.js
 # ----------------------------
-REQUIRED_NODE_VERSION="20"
+if command -v node &>/dev/null; then
+    NODE_VERSION=$(node -v | sed 's/v//')
+    NODE_MAJOR=$(echo $NODE_VERSION | cut -d. -f1)
+    echo "[INFO] Node.js version detected: $NODE_VERSION"
 
-if command_exists node; then
-  NODE_VERSION=$(node -v | sed 's/v//')
-  if version_ge "$NODE_VERSION" "$REQUIRED_NODE_VERSION"; then
-    echo "[OK] Node.js v$NODE_VERSION detected"
-  else
-    echo "[WARNING] Node.js v$NODE_VERSION detected, but v$REQUIRED_NODE_VERSION.x is required"
-    INSTALL_NODE=true
-  fi
+    if [ "$NODE_MAJOR" -lt "$REQUIRED_NODE_MAJOR" ]; then
+        echo "[WARN] Node.js version is too old. Removing current version..."
+        sudo apt remove -y nodejs
+        sudo apt autoremove -y
+        INSTALL_NODE=true
+    else
+        echo "[OK] Node.js version is sufficient."
+        INSTALL_NODE=false
+    fi
 else
-  echo "[WARNING] Node.js not detected"
-  INSTALL_NODE=true
+    echo "[WARN] Node.js not found. Will install required version."
+    INSTALL_NODE=true
 fi
 
 if [ "$INSTALL_NODE" = true ]; then
-  echo "[INFO] Installing Node.js v$REQUIRED_NODE_VERSION..."
-  curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-  sudo apt-get install -y nodejs
+    echo "[INFO] Installing Node.js $REQUIRED_NODE_VERSION..."
+    curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+    sudo apt install -y nodejs
 fi
 
-# Verify npm and npx
-NPM_VERSION=$(npm -v || echo "0")
-NPX_VERSION=$(npx -v || echo "0")
-echo "[OK] npm $NPM_VERSION detected"
-echo "[OK] npx $NPX_VERSION detected"
+echo "[INFO] Node.js version now: $(node -v)"
+echo "[INFO] npm version: $(npm -v)"
 
 # ----------------------------
-# 3. Hardhat in backend
+# 3. Check npm
 # ----------------------------
-BACKEND_DIR="./backend"
-cd "$BACKEND_DIR"
-if grep -q '"hardhat":' package.json; then
-  echo "[OK] Hardhat already listed in backend/package.json"
+if ! command -v npm &>/dev/null; then
+    echo "[INFO] npm not found. Installing..."
+    sudo apt install -y npm
 else
-  echo "[INFO] Installing Hardhat..."
-  npm install --save-dev hardhat@3.3.0
+    echo "[OK] npm detected: $(npm -v)"
 fi
-cd - >/dev/null
 
 # ----------------------------
-# 4. Docker
+# 4. Check npx
 # ----------------------------
-if command_exists docker; then
-  DOCKER_VERSION=$(docker --version | awk '{print $3}' | sed 's/,//')
-  echo "[OK] Docker Docker version $DOCKER_VERSION detected"
+if ! command -v npx &>/dev/null; then
+    echo "[INFO] npx not found. Installing..."
+    sudo npm install -g npx
 else
-  echo "[INFO] Installing Docker..."
-  sudo apt-get update
-  sudo apt-get install -y docker.io
+    echo "[OK] npx detected: $(npx -v)"
 fi
 
 # ----------------------------
-# 5. Docker Compose (v2.28.4+)
+# 5. Check Docker
 # ----------------------------
-REQUIRED_COMPOSE_VERSION="2.28.4"
-
-if command_exists docker-compose; then
-  COMPOSE_VERSION=$(docker-compose version --short)
-  if version_ge "$COMPOSE_VERSION" "$REQUIRED_COMPOSE_VERSION"; then
-    echo "[OK] Docker Compose v$COMPOSE_VERSION detected"
-  else
-    echo "[INFO] Updating Docker Compose..."
-    sudo apt-get remove -y docker-compose
-    sudo curl -L "https://github.com/docker/compose/releases/download/v2.39.4/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-    sudo chmod +x /usr/local/bin/docker-compose
-  fi
+if command -v docker &>/dev/null; then
+    echo "[OK] Docker version $(docker --version) detected"
 else
-  echo "[INFO] Installing Docker Compose..."
-  sudo curl -L "https://github.com/docker/compose/releases/download/v2.39.4/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-  sudo chmod +x /usr/local/bin/docker-compose
-fi
-
-echo "=========================================="
-echo "Host environment remediation complete!"
-echo "You should now be able to run ./pre-start.sh and ./start.sh"
-echo "=========================================="
+    echo "[WARN] Docker not found. Plea
