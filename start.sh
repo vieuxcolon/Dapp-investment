@@ -1,13 +1,17 @@
-
 #!/bin/bash
 set -e
 
 echo "=========================================="
-echo "Starting Investment DAO DApp (standalone)"
+echo "Starting Investment DAO DApp"
 echo "=========================================="
 
 # ----------------------------
-# 1. Backend: build & start container
+# 1. Run deterministic backend install & compile
+# ----------------------------
+./pre-start.sh
+
+# ----------------------------
+# 2. Build & start backend container
 # ----------------------------
 echo "=========================================="
 echo "Building and starting backend container..."
@@ -21,7 +25,7 @@ echo "[INFO] Waiting 15 seconds for backend to initialize..."
 sleep 15
 
 # ----------------------------
-# 2. Deploy contracts (if not already deployed)
+# 3. Deploy contracts
 # ----------------------------
 echo "=========================================="
 echo "Deploying contracts..."
@@ -30,7 +34,7 @@ echo "=========================================="
 docker compose run --rm backend npx hardhat run scripts/deploy.js --network localhost
 
 # ----------------------------
-# 3. Frontend: build & start container
+# 4. Build & start frontend container
 # ----------------------------
 echo "=========================================="
 echo "Building and starting frontend container..."
@@ -40,13 +44,12 @@ docker compose build --no-cache frontend
 docker compose up -d frontend
 
 # ----------------------------
-# 4. Show container status
+# 5. Show container status
 # ----------------------------
 echo "=========================================="
 echo "Containers status:"
 docker ps --filter "name=dao-"
 
-echo "=========================================="
-echo "DApp started successfully!"
+echo " DApp started successfully!"
 echo "Frontend: http://localhost:3000"
 echo "Backend Hardhat Node RPC: http://localhost:8545"
