@@ -5,36 +5,31 @@ echo "=========================================="
 echo "Starting Investment DAO DApp"
 echo "=========================================="
 
-# Step 1: Run pre-start.sh (compile + export ABIs)
+# Step 1: Run pre-start.sh
 ./pre-start.sh
 
-# Step 2: Start backend Hardhat node
+# Step 2: Build & start backend container
 echo "=========================================="
-echo "Starting backend Hardhat node..."
+echo "Building backend container..."
 echo "=========================================="
-
-
-# Build & start Docker containers 
-echo "Building Docker containers (no cache)..."
-docker compose build --no-cache
+docker compose build --no-cache backend
 docker compose up -d backend
 
-# Wait a few seconds to ensure Hardhat node is ready
-echo "Waiting 15 seconds for backend to initialize..."
+# Wait for backend Hardhat node to initialize
+echo "[INFO] Waiting 15 seconds for backend RPC node..."
 sleep 15
 
-# Step 3: Deploy contracts and update .env files
+# Step 3: Deploy contracts and update .env
 echo "=========================================="
 echo "Deploying contracts..."
 echo "=========================================="
-
 docker compose run --rm backend npx hardhat run scripts/deploy.js --network localhost
 
-# Step 4: Start frontend container
+# Step 4: Build & start frontend container
 echo "=========================================="
-echo "Starting frontend container..."
+echo "Building frontend container..."
 echo "=========================================="
-
+docker compose build --no-cache frontend
 docker compose up -d frontend
 
 # Step 5: Show status
@@ -42,6 +37,7 @@ echo "=========================================="
 echo "Containers status:"
 docker ps --filter "name=dao-"
 
-echo " DApp started successfully!"
+echo "=========================================="
+echo "DApp started successfully!"
 echo "Frontend: http://localhost:3000"
 echo "Backend Hardhat Node RPC: http://localhost:8545"
