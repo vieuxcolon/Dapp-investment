@@ -12,14 +12,15 @@ contract ProposalExecutor {
     event StartupFunded(uint256 proposalId, address startup, uint256 amount);
     event AssetTraded(uint256 proposalId, string tradeDetails);
 
-    constructor(address _governance, address _treasury) {
+    constructor(address _governance, address payable _treasury) {
         governance = Governance(_governance);
         treasury = Treasury(_treasury);
     }
 
-    /// @notice Execute a passed proposal
     function executeProposal(uint256 _proposalId, address payable _recipient) external {
-        Governance.Proposal memory proposal = governance.proposals(_proposalId);
+        // Access the proposal via storage reference to avoid mapping copy errors
+        Governance.Proposal storage proposal = governance.proposals(_proposalId);
+
         require(proposal.state == Governance.ProposalState.Active, "Proposal not active");
         require(governance.proposalPassed(_proposalId), "Proposal did not pass");
 
@@ -27,6 +28,7 @@ contract ProposalExecutor {
             treasury.transferFunds(_recipient, proposal.amount);
             emit StartupFunded(_proposalId, _recipient, proposal.amount);
         } else if (proposal.proposalType == Governance.ProposalType.AssetTrade) {
+            // Placeholder for trading logic
             emit AssetTraded(_proposalId, "Execute asset trade logic here");
         }
 
