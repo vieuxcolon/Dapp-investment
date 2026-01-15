@@ -5,28 +5,22 @@ echo "=========================================="
 echo "Starting Investment DAO DApp"
 echo "=========================================="
 
-# Step 1: Build Docker images
-echo "Step 1: Building backend and frontend Docker images..."
-docker compose build --no-cache
-
-# Step 2: Start backend container (Hardhat node)
-echo "Step 2: Starting backend container..."
-docker compose up -d backend
-
-# Wait for Hardhat node to be ready
-echo "Waiting 15 seconds for Hardhat node..."
-sleep 15
-
-# Step 3: Compile contracts & export ABIs
-echo "Step 3: Compiling contracts and exporting ABIs..."
+# Step 1: Run pre-start.sh
 ./pre-start.sh
 
-# Step 4: Start frontend container
-echo "Step 4: Starting frontend container..."
-docker compose up -d frontend
+# Step 2: Start Docker containers via docker-compose
+echo "=========================================="
+echo "Building and starting Docker containers..."
+echo "=========================================="
 
+# Use Docker Compose v2+ syntax
+docker compose up --build -d
+
+# Step 3: Show container status
 echo "=========================================="
-echo " All services are running!"
+echo "Containers status:"
+docker ps --filter "name=dao-"
+
+echo "DApp started successfully!"
 echo "Frontend: http://localhost:3000"
-echo "Hardhat node RPC: http://localhost:8545"
-echo "=========================================="
+echo "Backend Hardhat Node RPC: http://localhost:8545"
