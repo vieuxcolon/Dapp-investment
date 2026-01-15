@@ -20,7 +20,7 @@ contract Governance is Ownable {
         ProposalType proposalType;
         address proposer;
         string description;
-        uint256 amount; // Funds requested or trade amount
+        uint256 amount;
         uint256 yesVotes;
         uint256 noVotes;
         ProposalState state;
@@ -35,12 +35,11 @@ contract Governance is Ownable {
     event VoteCast(uint256 indexed id, address voter, bool support);
     event ProposalExecuted(uint256 indexed id);
 
-    constructor(address _daoToken, address payable _treasury) {
-        daoToken = DAOToken(_daoToken);
-        treasury = Treasury(_treasury); // _treasury is now payable-compatible
+    constructor(DAOToken _daoToken, Treasury _treasury) {
+        daoToken = _daoToken;
+        treasury = _treasury;
     }
 
-    /// @notice Submit a new proposal
     function submitProposal(
         ProposalType _type,
         string calldata _description,
@@ -57,40 +56,32 @@ contract Governance is Ownable {
             noVotes: 0,
             state: ProposalState.Active,
             startTime: block.timestamp,
-            endTime: block.timestamp + 3 days // Voting period
+            endTime: block.timestamp + 3 days
         });
         emit ProposalCreated(proposalCount, _type, msg.sender);
     }
 
-    /// @notice Vote on a proposal
     function vote(uint256 _proposalId, bool support) external {
         Proposal storage proposal = proposals[_proposalId];
         require(block.timestamp <= proposal.endTime, "Voting period ended");
         require(!hasVoted[_proposalId][msg.sender], "Already voted");
-
         uint256 votingPower = daoToken.balanceOf(msg.sender);
         require(votingPower > 0, "No voting power");
 
-        if (support) {
-            proposal.yesVotes += votingPower;
-        } else {
-            proposal.noVotes += votingPower;
-        }
+        if (support) proposal.yesVotes += votingPower;
+        else proposal.noVotes += votingPower;
 
         hasVoted[_proposalId][msg.sender] = true;
         emit VoteCast(_proposalId, msg.sender, support);
     }
 
-    /// @notice Check if a proposal passed
     function proposalPassed(uint256 _proposalId) public view returns (bool) {
         Proposal storage proposal = proposals[_proposalId];
         return proposal.yesVotes > proposal.noVotes;
     }
 
-    /// @notice Mark proposal as executed (actual execution happens in ProposalExecutor)
     function markExecuted(uint256 _proposalId) external onlyOwner {
-        Proposal storage proposal = proposals[_proposalId];
-        proposal.state = ProposalState.Executed;
+        proposals[_proposalId].state = ProposalState.Executed;
         emit ProposalExecuted(_proposalId);
     }
 }
