@@ -1,7 +1,6 @@
 {
   "name": "dapp-investment-backend",
   "version": "1.0.0",
-  "description": "Hardhat backend for Investment DAO DApp",
   "scripts": {
     "compile": "npx hardhat compile",
     "test": "npx hardhat test",
