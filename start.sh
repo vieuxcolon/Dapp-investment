@@ -13,11 +13,15 @@ echo "=========================================="
 echo "Starting backend Hardhat node..."
 echo "=========================================="
 
+
+# Build & start Docker containers 
+echo "Building Docker containers (no cache)..."
+docker compose build --no-cache
 docker compose up -d backend
 
 # Wait a few seconds to ensure Hardhat node is ready
-echo "Waiting 5 seconds for backend to initialize..."
-sleep 5
+echo "Waiting 15 seconds for backend to initialize..."
+sleep 15
 
 # Step 3: Deploy contracts and update .env files
 echo "=========================================="
