@@ -1,21 +1,22 @@
+
 {
   "name": "dapp-investment-backend",
   "version": "1.0.0",
   "description": "Hardhat backend for Investment DAO DApp",
   "scripts": {
-    "compile": "npx hardhat compile",
-    "test": "npx hardhat test",
-    "deploy": "npx hardhat run scripts/deploy.js --network localhost"
-  },
-  "dependencies": {
-    "@nomicfoundation/hardhat-toolbox": "6.1.2",
-    "@openzeppelin/contracts": "4.9.3",
-    "dotenv": "16.3.1",
-    "ethers": "6.9.0"
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy": "hardhat run scripts/deploy.js --network localhost"
   },
   "devDependencies": {
     "hardhat": "3.3.0",
-    "chai": "4.3.7"
+    "@nomicfoundation/hardhat-toolbox": "6.1.2",
+    "ethers": "6.16.0",
+    "chai": "4.3.7",
+    "dotenv": "16.3.1"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "4.9.3"
   },
   "engines": {
     "node": ">=20.0.0"
