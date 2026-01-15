@@ -1,8 +1,9 @@
+# frontend.Dockerfile
 FROM node:20-bullseye
 
 WORKDIR /app/frontend
 
-# Copy package files first
+# Copy package.json first for caching
 COPY frontend/package*.json ./
 
 # Install dependencies
@@ -13,4 +14,5 @@ COPY frontend/ ./
 
 EXPOSE 3000
 
+# Start React frontend
 CMD ["npm", "start"]
