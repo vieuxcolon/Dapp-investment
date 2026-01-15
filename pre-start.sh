@@ -1,31 +1,16 @@
 #!/bin/bash
 set -e
 
-echo "=========================================="
-echo "Pre-start: installing dependencies, compiling contracts and exporting ABIs..."
-echo "=========================================="
+echo "========================================================="
+echo "Pre-start: compiling contracts and exporting ABIs..."
+echo "========================================================="
 
 # ----------------------------
-# 1. Backend dependencies
+# 1. Compile contracts
 # ----------------------------
-BACKEND_DIR="./backend"
-cd "$BACKEND_DIR"
+cd backend
 
-echo "[INFO] Ensuring deterministic backend dependencies..."
-
-# Force Hardhat 3.3.0
-npm install --save-dev hardhat@3.3.0
-
-# Force compatible Hardhat toolbox
-npm install @nomicfoundation/hardhat-toolbox@6.1.2 --save-dev
-
-# Ensure package-lock.json exists
-if [ ! -f package-lock.json ]; then
-  echo "[INFO] package-lock.json missing. Running npm install to generate lockfile..."
-  npm install --package-lock-only
-fi
-
-# Compile contracts
+#  NO npm install here
 npx hardhat compile
 
 cd - >/dev/null
