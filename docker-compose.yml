@@ -1,24 +1,32 @@
 services:
   backend:
     build:
-      context: ./docker
-      dockerfile: backend.Dockerfile
-    volumes:
-      - ./backend:/app/backend
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    container_name: dao-backend
     ports:
       - "8545:8545"
-    env_file:
-      - .env
+    environment:
+      - LOCAL_RPC_URL=http://localhost:8545
+      - PRIVATE_KEY=${PRIVATE_KEY}
+    volumes:
+      - ./backend:/app/backend
+    command: ["npx", "hardhat", "node"]
 
   frontend:
     build:
-      context: ./docker
-      dockerfile: frontend.Dockerfile
-    volumes:
-      - ./frontend:/app/frontend
+      context: .
+      dockerfile: docker/frontend.Dockerfile
+    container_name: dao-frontend
     ports:
       - "3000:3000"
-    env_file:
-      - .env
+    environment:
+      - REACT_APP_RPC_URL=http://localhost:8545
+      - REACT_APP_DAOTOKEN_ADDRESS=${DAOTOKEN_ADDRESS}
+      - REACT_APP_GOVERNANCE_ADDRESS=${GOVERNANCE_ADDRESS}
+      - REACT_APP_TREASURY_ADDRESS=${TREASURY_ADDRESS}
+      - REACT_APP_PROPOSALEXECUTOR_ADDRESS=${PROPOSALEXECUTOR_ADDRESS}
+    volumes:
+      - ./frontend:/app/frontend
     depends_on:
       - backend
