@@ -7,15 +7,13 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 /// @title DAOToken - ERC20 Governance Token for Investment DAO
 contract DAOToken is ERC20, Ownable {
     constructor() ERC20("Investment DAO Token", "IDT") {
-        _mint(msg.sender, 1_000_000 * 10 ** decimals()); // Initial supply to deployer
+        _mint(msg.sender, 1_000_000 * 10 ** decimals());
     }
 
-    /// @notice Mint tokens to a new DAO member
     function mint(address to, uint256 amount) external onlyOwner {
         _mint(to, amount);
     }
 
-    /// @notice Burn tokens from a member (optional)
     function burn(address from, uint256 amount) external onlyOwner {
         _burn(from, amount);
     }
