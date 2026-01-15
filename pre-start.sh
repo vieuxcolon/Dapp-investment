@@ -2,57 +2,30 @@
 set -e
 
 echo "=========================================="
-echo "Pre-start: installing dependencies, compiling contracts and exporting ABIs..."
+echo "Pre-start: installing backend dependencies, compiling contracts and exporting ABIs..."
 echo "=========================================="
 
-# ------------------------------
-# 0. Backend setup
-# ------------------------------
 cd backend
 
+# 1. Ensure deterministic backend dependencies
 if [ ! -f package-lock.json ]; then
-  echo "[INFO] No package-lock.json found in backend. Running npm install to generate lockfile..."
-  npm install
+  echo "[INFO] No package-lock.json found. Running npm install..."
+  npm install --legacy-peer-deps
+else
+  echo "[INFO] package-lock.json found. Running npm ci for deterministic install..."
+  npm ci --legacy-peer-deps
 fi
 
-echo "[INFO] Installing backend dependencies deterministically..."
-npm ci
-
-# ------------------------------
-# 1. Compile contracts
-# ------------------------------
+# 2. Compile contracts
 npx hardhat compile
 
-cd ..
-
-# ------------------------------
-# 2. Frontend setup
-# ------------------------------
-cd frontend
-
-if [ ! -f package-lock.json ]; then
-  echo "[INFO] No package-lock.json found in frontend. Running npm install to generate lockfile..."
-  npm install
-fi
-
-echo "[INFO] Installing frontend dependencies deterministically..."
-npm ci
-
-cd ..
-
-# ------------------------------
-# 3. Export ABIs from backend to frontend
-# ------------------------------
-FRONTEND_CONTRACT_DIR="frontend/src/contracts"
+# 3. Export ABIs to frontend
+FRONTEND_CONTRACT_DIR="../frontend/src/contracts"
 mkdir -p $FRONTEND_CONTRACT_DIR
 
-cp backend/artifacts/contracts/DAOToken.sol/DAOToken.json $FRONTEND_CONTRACT_DIR/
-cp backend/artifacts/contracts/Governance.sol/Governance.json $FRONTEND_CONTRACT_DIR/
-cp backend/artifacts/contracts/Treasury.sol/Treasury.json $FRONTEND_CONTRACT_DIR/
-cp backend/artifacts/contracts/ProposalExecutor.sol/ProposalExecutor.json $FRONTEND_CONTRACT_DIR/
+cp artifacts/contracts/DAOToken.sol/DAOToken.json $FRONTEND_CONTRACT_DIR/
+cp artifacts/contracts/Governance.sol/Governance.json $FRONTEND_CONTRACT_DIR/
+cp artifacts/contracts/Treasury.sol/Treasury.json $FRONTEND_CONTRACT_DIR/
+cp artifacts/contracts/ProposalExecutor.sol/ProposalExecutor.json $FRONTEND_CONTRACT_DIR/
 
 echo "[INFO] ABIs exported to frontend."
-
-echo "=========================================="
-echo "Pre-start complete. Backend and frontend ready."
-echo "=========================================="
