@@ -9,7 +9,7 @@ echo "=========================================="
 if ! docker ps --format '{{.Names}}' | grep -q "dao-backend"; then
   echo "Backend container not running. Starting..."
   docker compose up -d backend
-  sleep 15
+  sleep 5
 fi
 
 # Compile contracts inside backend container and export ABIs
