@@ -1,3 +1,4 @@
+
 #!/bin/bash
 set -e
 
@@ -5,34 +6,52 @@ echo "=========================================="
 echo "Starting Investment DAO DApp"
 echo "=========================================="
 
-# Step 1: Run pre-start.sh
+# ------------------------------
+# 1. Pre-start: install dependencies, compile contracts, export ABIs
+# ------------------------------
 ./pre-start.sh
 
-# Step 2: Build & start backend container
+# ------------------------------
+# 2. Build Docker containers (no cache)
+# ------------------------------
 echo "=========================================="
-echo "Building backend container..."
+echo "Building Docker containers (no cache)..."
 echo "=========================================="
-docker compose build --no-cache backend
+docker compose build --no-cache
+
+# ------------------------------
+# 3. Start backend Hardhat node
+# ------------------------------
+echo "=========================================="
+echo "Starting backend Hardhat node..."
+echo "=========================================="
 docker compose up -d backend
 
-# Wait for backend Hardhat node to initialize
-echo "[INFO] Waiting 15 seconds for backend RPC node..."
+# ------------------------------
+# 4. Wait for backend to initialize
+# ------------------------------
+echo "Waiting 15 seconds for backend to be ready..."
 sleep 15
 
-# Step 3: Deploy contracts and update .env
+# ------------------------------
+# 5. Deploy contracts to backend
+# ------------------------------
 echo "=========================================="
 echo "Deploying contracts..."
 echo "=========================================="
 docker compose run --rm backend npx hardhat run scripts/deploy.js --network localhost
 
-# Step 4: Build & start frontend container
+# ------------------------------
+# 6. Start frontend container
+# ------------------------------
 echo "=========================================="
-echo "Building frontend container..."
+echo "Starting frontend container..."
 echo "=========================================="
-docker compose build --no-cache frontend
 docker compose up -d frontend
 
-# Step 5: Show status
+# ------------------------------
+# 7. Show container status
+# ------------------------------
 echo "=========================================="
 echo "Containers status:"
 docker ps --filter "name=dao-"
@@ -41,3 +60,4 @@ echo "=========================================="
 echo "DApp started successfully!"
 echo "Frontend: http://localhost:3000"
 echo "Backend Hardhat Node RPC: http://localhost:8545"
+echo "=========================================="
