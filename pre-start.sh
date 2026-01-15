@@ -5,33 +5,37 @@ echo "=========================================="
 echo "Pre-start: validating, compiling, exporting ABIs"
 echo "=========================================="
 
-# ----------------------------
-# 1. Backend dependencies
-# ----------------------------
 BACKEND_DIR="./backend"
-cd "$BACKEND_DIR"
+FRONTEND_DIR="./frontend/src/contracts"
 
-echo "[INFO] Installing deterministic backend dependencies via package-lock.json..."
-# Install exactly what's in package-lock.json
+# ----------------------------
+# 1. Backend dependencies (deterministic)
+# ----------------------------
+cd "$BACKEND_DIR"
+echo "[INFO] Installing deterministic dependencies..."
 npm ci
 
 # ----------------------------
-# 2. Compile contracts
+# 2. Compile Hardhat contracts
 # ----------------------------
-echo "[INFO] Compiling Hardhat contracts..."
+echo "[INFO] Compiling contracts..."
+npx hardhat clean
 npx hardhat compile
 
 cd - >/dev/null
 
 # ----------------------------
-# 3. Export ABIs to frontend
+# 3. Export ABIs
 # ----------------------------
-FRONTEND_CONTRACT_DIR="./frontend/src/contracts"
-mkdir -p "$FRONTEND_CONTRACT_DIR"
+mkdir -p "$FRONTEND_DIR"
+for contract in DAOToken Governance Treasury ProposalExecutor; do
+    src="$BACKEND_DIR/artifacts/contracts/$contract.sol/$contract.json"
+    if [ -f "$src" ]; then
+        cp "$src" "$FRONTEND_DIR/"
+        echo "[INFO] Exported $contract ABI to frontend"
+    else
+        echo "[WARN] $contract artifact not found, skipping..."
+    fi
+done
 
-cp backend/artifacts/contracts/DAOToken.sol/DAOToken.json "$FRONTEND_CONTRACT_DIR/"
-cp backend/artifacts/contracts/Governance.sol/Governance.json "$FRONTEND_CONTRACT_DIR/"
-cp backend/artifacts/contracts/Treasury.sol/Treasury.json "$FRONTEND_CONTRACT_DIR/"
-cp backend/artifacts/contracts/ProposalExecutor.sol/ProposalExecutor.json "$FRONTEND_CONTRACT_DIR/"
-
-echo "[OK] ABIs exported to frontend."
+echo "[OK] Pre-start phase complete."
