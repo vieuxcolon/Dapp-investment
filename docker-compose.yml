@@ -3,30 +3,22 @@ services:
     build:
       context: .
       dockerfile: docker/backend.Dockerfile
-    container_name: dao-backend
     ports:
       - "8545:8545"
     environment:
-      - NODE_ENV=development
       - PRIVATE_KEY=${PRIVATE_KEY}
       - LOCAL_RPC_URL=${LOCAL_RPC_URL}
     volumes:
       - ./backend:/app/backend
-      - ./frontend/src/contracts:/app/frontend/src/contracts
+    command: ["npx", "hardhat", "node"]
 
   frontend:
     build:
       context: .
       dockerfile: docker/frontend.Dockerfile
-    container_name: dao-frontend
     ports:
       - "3000:3000"
-    environment:
-      - REACT_APP_RPC_URL=${REACT_APP_RPC_URL}
-      - REACT_APP_DAOTOKEN_ADDRESS=${REACT_APP_DAOTOKEN_ADDRESS}
-      - REACT_APP_GOVERNANCE_ADDRESS=${REACT_APP_GOVERNANCE_ADDRESS}
-      - REACT_APP_TREASURY_ADDRESS=${REACT_APP_TREASURY_ADDRESS}
-      - REACT_APP_PROPOSALEXECUTOR_ADDRESS=${REACT_APP_PROPOSALEXECUTOR_ADDRESS}
+    env_file:
+      - frontend/.env
     volumes:
       - ./frontend:/app/frontend
-
