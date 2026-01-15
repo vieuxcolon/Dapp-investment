@@ -1,14 +1,14 @@
-/** @type import('hardhat/config').HardhatUserConfig */
-require("@nomiclabs/hardhat-ethers");
+import "@nomicfoundation/hardhat-toolbox";
 
-module.exports = {
-  solidity: {
-    version: "0.8.19",
-    settings: {
-      optimizer: {
-        enabled: true,
-        runs: 200,
-      },
-    },
-  },
+/** @type import('hardhat/config').HardhatUserConfig */
+const config = {
+  solidity: "0.8.19",
+  paths: {
+    sources: "./contracts",
+    tests: "./test",
+    cache: "./cache",
+    artifacts: "./artifacts"
+  }
 };
+
+export default config;
