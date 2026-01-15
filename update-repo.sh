@@ -1,84 +1,68 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+set -euo pipefail
 
 echo "=========================================="
-echo "Starting Hardhat 2.x repo cleanup workflow"
+echo "Starting Hardhat 3.x repo upgrade workflow"
 echo "=========================================="
 
-# ----------------------------
-# 1. Remove legacy Hardhat 3.x config files
-# ----------------------------
-echo "[INFO] Removing legacy Hardhat 3.x config files..."
-rm -f backend/hardhat.config.js
-rm -f backend/package-lock.json
-rm -rf backend/node_modules
+BACKEND_DIR="./backend"
+FRONTEND_DIR="./frontend"
 
-# ----------------------------
-# 2. Clean backend and install dependencies
-# ----------------------------
-echo "[INFO] Cleaning backend..."
-cd backend
+# 1️⃣ Backup old HH2.x files
+echo "[INFO] Backing up old Hardhat 2.x files..."
+mkdir -p ./backup_HH2
+cp -r $BACKEND_DIR/package-lock.json ./backup_HH2/package-lock.json || true
+cp -r $BACKEND_DIR/hardhat.config.js ./backup_HH2/hardhat.config.js || true
+rm -rf $BACKEND_DIR/cache $BACKEND_DIR/artifacts
 
-# Remove node_modules just in case
-rm -rf node_modules
+# 2️⃣ Clean backend node_modules
+echo "[INFO] Cleaning backend node_modules..."
+rm -rf $BACKEND_DIR/node_modules
+rm -f $BACKEND_DIR/package-lock.json
 
-# If package-lock.json does not exist, generate it
-if [ ! -f package-lock.json ]; then
-    echo "[INFO] package-lock.json missing. Generating it..."
-    npm install
-fi
+# 3️⃣ Update backend package.json for HH3.x
+echo "[INFO] Updating backend package.json for Hardhat 3.x..."
+jq '.devDependencies.hardhat="^3.1.4"' $BACKEND_DIR/package.json > tmp.json && mv tmp.json $BACKEND_DIR/package.json
+jq '.devDependencies["@nomicfoundation/hardhat-toolbox"]="^3.1.0"' $BACKEND_DIR/package.json > tmp.json && mv tmp.json $BACKEND_DIR/package.json
+jq 'del(.devDependencies["@nomiclabs/hardhat-ethers"])' $BACKEND_DIR/package.json > tmp.json && mv tmp.json $BACKEND_DIR/package.json
 
-# Install deterministic dependencies
-echo "[INFO] Installing deterministic Hardhat 2.x dependencies..."
-npm ci
+# 4️⃣ Install HH3.x dependencies
+echo "[INFO] Installing Hardhat 3.x and other dependencies..."
+cd $BACKEND_DIR
+npm install
+npm install @openzeppelin/contracts
 
-# Ensure Hardhat 2.x is installed
-npm install --save-dev hardhat@^2.28.0 @nomiclabs/hardhat-ethers@^2.2.3
+# 5️⃣ Generate new Hardhat 3.x config
+echo "[INFO] Creating new Hardhat 3.x config..."
+cat > hardhat.config.js <<EOL
+import { HardhatUserConfig } from "hardhat/config";
+import "@nomicfoundation/hardhat-toolbox";
 
-# Ensure OpenZeppelin Contracts is installed
-if ! npm list @openzeppelin/contracts &>/dev/null; then
-    echo "[INFO] Installing OpenZeppelin Contracts..."
-    npm install @openzeppelin/contracts@^4.9.3 --save
-fi
-
-# ----------------------------
-# 3. Create Hardhat config for HH2.x if missing
-# ----------------------------
-if [ ! -f hardhat.config.js ]; then
-    echo "[INFO] Creating hardhat.config.js for HH2.x..."
-    cat <<EOL > hardhat.config.js
-require("@nomiclabs/hardhat-ethers");
-
-/**
- * @type import('hardhat/config').HardhatUserConfig
- */
-module.exports = {
-  solidity: "0.8.28",
+const config: HardhatUserConfig = {
+  solidity: {
+    version: "0.8.28",
+    settings: {
+      optimizer: { enabled: true, runs: 200 },
+    },
+  },
+  paths: {
+    sources: "./contracts",
+    tests: "./test",
+    cache: "./cache",
+    artifacts: "./artifacts",
+  },
+  networks: {
+    hardhat: {},
+  },
 };
-EOL
-fi
 
-# ----------------------------
-# 4. Compile contracts
-# ----------------------------
-echo "[INFO] Compiling Hardhat contracts..."
+export default config;
+EOL
+
+# 6️⃣ Compile contracts
+echo "[INFO] Compiling contracts with Hardhat 3.x..."
 npx hardhat compile
 
-# ----------------------------
-# 5. Export ABIs to frontend
-# ----------------------------
-FRONTEND_CONTRACT_DIR="../frontend/src/contracts"
-mkdir -p "$FRONTEND_CONTRACT_DIR"
-
-echo "[INFO] Exporting ABIs to frontend..."
-cp artifacts/contracts/DAOToken.sol/DAOToken.json "$FRONTEND_CONTRACT_DIR/"
-cp artifacts/contracts/Governance.sol/Governance.json "$FRONTEND_CONTRACT_DIR/"
-cp artifacts/contracts/Treasury.sol/Treasury.json "$FRONTEND_CONTRACT_DIR/"
-cp artifacts/contracts/ProposalExecutor.sol/ProposalExecutor.json "$FRONTEND_CONTRACT_DIR/"
-
-cd - >/dev/null
-
 echo "=========================================="
-echo "Hardhat 2.x repo update complete!"
-echo "You can now run ./pre-start.sh and ./start.sh"
+echo "Hardhat 3.x upgrade workflow completed successfully!"
 echo "=========================================="
