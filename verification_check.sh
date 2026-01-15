@@ -5,103 +5,103 @@ echo "=========================================="
 echo "Verifying and remediating host environment"
 echo "=========================================="
 
-# ------------------------------
-# 1. Handle hung apt/dpkg locks
-# ------------------------------
-MAX_WAIT=120  # seconds
-WAITED=0
-SLEEP_INTERVAL=5
+# ----------------------------
+# Helper functions
+# ----------------------------
+command_exists() {
+  command -v "$1" >/dev/null 2>&1
+}
 
+version_ge() {
+  # Compare two semantic versions: $1 >= $2
+  [ "$(printf '%s\n' "$2" "$1" | sort -V | head -n1)" = "$2" ]
+}
+
+# ----------------------------
+# 1. Clear apt/dpkg locks
+# ----------------------------
 echo "[INFO] Checking for other apt/dpkg processes..."
-
-while sudo fuser /var/lib/dpkg/lock >/dev/null 2>&1 || sudo fuser /var/lib/apt/lists/lock >/dev/null 2>&1; do
-    if [ $WAITED -ge $MAX_WAIT ]; then
-        echo "[WARNING] apt/dpkg lock has been held for over $MAX_WAIT seconds."
-        echo "[INFO] Attempting to detect stuck processes..."
-        STUCK_PIDS=$(ps -eo pid,cmd | grep -E "apt|dpkg" | grep -v grep | awk '{print $1}')
-        if [ -n "$STUCK_PIDS" ]; then
-            echo "[INFO] Stopping stuck processes: $STUCK_PIDS"
-            sudo kill -9 $STUCK_PIDS
-            echo "[INFO] Removing lock files..."
-            sudo rm -f /var/lib/dpkg/lock /var/lib/apt/lists/lock /var/cache/apt/archives/lock
-            sudo dpkg --configure -a
-        fi
-        break
-    fi
-    echo "[INFO] Waiting for other apt/dpkg processes to finish..."
-    sleep $SLEEP_INTERVAL
-    WAITED=$((WAITED + SLEEP_INTERVAL))
-done
-
+sudo fuser -vki /var/lib/dpkg/lock /var/lib/apt/lists/lock /var/cache/apt/archives/lock >/dev/null 2>&1 || true
+sudo dpkg --configure -a >/dev/null 2>&1 || true
 echo "[INFO] apt/dpkg locks cleared. Continuing..."
 
-# ------------------------------
-# 2. Install / verify Node.js v20
-# ------------------------------
-NODE_REQUIRED="20"
+# ----------------------------
+# 2. Node.js v20.x
+# ----------------------------
+REQUIRED_NODE_VERSION="20"
 
-if command -v node >/dev/null 2>&1; then
-    NODE_CURRENT=$(node -v | sed 's/v//;s/\..*//')
-    if [ "$NODE_CURRENT" -eq "$NODE_REQUIRED" ]; then
-        echo "[OK] Node.js v$NODE_REQUIRED detected"
-    else
-        echo "[WARNING] Node.js v$(node -v) detected, but v$NODE_REQUIRED.x is required."
-        echo "[INFO] Installing Node.js v$NODE_REQUIRED..."
-        sudo apt remove -y nodejs
-        curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-        sudo apt-get install -y nodejs
-    fi
+if command_exists node; then
+  NODE_VERSION=$(node -v | sed 's/v//')
+  if version_ge "$NODE_VERSION" "$REQUIRED_NODE_VERSION"; then
+    echo "[OK] Node.js v$NODE_VERSION detected"
+  else
+    echo "[WARNING] Node.js v$NODE_VERSION detected, but v$REQUIRED_NODE_VERSION.x is required"
+    INSTALL_NODE=true
+  fi
 else
-    echo "[INFO] Node.js not found. Installing Node.js v$NODE_REQUIRED..."
-    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-    sudo apt-get install -y nodejs
+  echo "[WARNING] Node.js not detected"
+  INSTALL_NODE=true
 fi
 
-# ------------------------------
-# 3. Verify npm and npx
-# ------------------------------
-if command -v npm >/dev/null 2>&1; then
-    echo "[OK] npm $(npm -v) detected"
-else
-    echo "[INFO] Installing npm..."
-    sudo apt install -y npm
+if [ "$INSTALL_NODE" = true ]; then
+  echo "[INFO] Installing Node.js v$REQUIRED_NODE_VERSION..."
+  curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+  sudo apt-get install -y nodejs
 fi
 
-if command -v npx >/dev/null 2>&1; then
-    echo "[OK] npx $(npx -v) detected"
+# Verify npm and npx
+NPM_VERSION=$(npm -v || echo "0")
+NPX_VERSION=$(npx -v || echo "0")
+echo "[OK] npm $NPM_VERSION detected"
+echo "[OK] npx $NPX_VERSION detected"
+
+# ----------------------------
+# 3. Hardhat in backend
+# ----------------------------
+BACKEND_DIR="./backend"
+cd "$BACKEND_DIR"
+if grep -q '"hardhat":' package.json; then
+  echo "[OK] Hardhat already listed in backend/package.json"
 else
-    echo "[INFO] Installing npx..."
-    sudo npm install -g npx
+  echo "[INFO] Installing Hardhat..."
+  npm install --save-dev hardhat@3.3.0
+fi
+cd - >/dev/null
+
+# ----------------------------
+# 4. Docker
+# ----------------------------
+if command_exists docker; then
+  DOCKER_VERSION=$(docker --version | awk '{print $3}' | sed 's/,//')
+  echo "[OK] Docker Docker version $DOCKER_VERSION detected"
+else
+  echo "[INFO] Installing Docker..."
+  sudo apt-get update
+  sudo apt-get install -y docker.io
 fi
 
-# ------------------------------
-# 4. Verify Hardhat
-# ------------------------------
-if [ -f "./backend/package.json" ] && grep -q "hardhat" ./backend/package.json; then
-    echo "[OK] Hardhat already listed in backend/package.json"
-else
-    echo "[INFO] Installing Hardhat in backend..."
-    cd backend
-    npm install --save-dev hardhat
-    cd ..
-fi
+# ----------------------------
+# 5. Docker Compose (v2.28.4+)
+# ----------------------------
+REQUIRED_COMPOSE_VERSION="2.28.4"
 
-# ------------------------------
-# 5. Verify Docker and Docker Compose
-# ------------------------------
-if command -v docker >/dev/null 2>&1; then
-    echo "[OK] Docker $(docker --version) detected"
+if command_exists docker-compose; then
+  COMPOSE_VERSION=$(docker-compose version --short)
+  if version_ge "$COMPOSE_VERSION" "$REQUIRED_COMPOSE_VERSION"; then
+    echo "[OK] Docker Compose v$COMPOSE_VERSION detected"
+  else
+    echo "[INFO] Updating Docker Compose..."
+    sudo apt-get remove -y docker-compose
+    sudo curl -L "https://github.com/docker/compose/releases/download/v2.39.4/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+    sudo chmod +x /usr/local/bin/docker-compose
+  fi
 else
-    echo "[INFO] Docker not found. Please install Docker manually: https://docs.docker.com/get-docker/"
-fi
-
-if command -v docker-compose >/dev/null 2>&1 || docker compose version >/dev/null 2>&1; then
-    echo "[OK] Docker Compose detected"
-else
-    echo "[INFO] Docker Compose not found. Please install Docker Compose: https://docs.docker.com/compose/install/"
+  echo "[INFO] Installing Docker Compose..."
+  sudo curl -L "https://github.com/docker/compose/releases/download/v2.39.4/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+  sudo chmod +x /usr/local/bin/docker-compose
 fi
 
 echo "=========================================="
 echo "Host environment remediation complete!"
-echo "You should now be able to run ./pre-start.sh"
+echo "You should now be able to run ./pre-start.sh and ./start.sh"
 echo "=========================================="
