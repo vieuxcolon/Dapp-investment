@@ -7,7 +7,7 @@ echo "=========================================="
 
 # Step 1: Build Docker images
 echo "Step 1: Building backend and frontend Docker images..."
-docker compose build
+docker compose build --no-cache
 
 # Step 2: Start backend container (Hardhat node)
 echo "Step 2: Starting backend container..."
@@ -26,7 +26,7 @@ echo "Step 4: Starting frontend container..."
 docker compose up -d frontend
 
 echo "=========================================="
-echo "All services are running!"
+echo " All services are running!"
 echo "Frontend: http://localhost:3000"
 echo "Hardhat node RPC: http://localhost:8545"
 echo "=========================================="
