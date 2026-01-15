@@ -1,3 +1,4 @@
+
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
@@ -14,13 +15,12 @@ contract ProposalExecutor {
 
     constructor(address _governance, address payable _treasury) {
         governance = Governance(_governance);
-        treasury = Treasury(_treasury);
+        treasury = Treasury(_treasury); // payable address handled
     }
 
+    /// @notice Execute a passed proposal
     function executeProposal(uint256 _proposalId, address payable _recipient) external {
-        // Access the proposal via storage reference to avoid mapping copy errors
         Governance.Proposal storage proposal = governance.proposals(_proposalId);
-
         require(proposal.state == Governance.ProposalState.Active, "Proposal not active");
         require(governance.proposalPassed(_proposalId), "Proposal did not pass");
 
