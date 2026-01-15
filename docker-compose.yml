@@ -1,0 +1,19 @@
+services:
+  backend:
+    build:
+      context: ../
+      dockerfile: docker/backend.Dockerfile
+    ports:
+      - "8545:8545"
+    volumes:
+      - ../backend:/app/backend
+
+  frontend:
+    build: 
+      context: ../frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_RPC_URL=http://backend:8545
+    depends_on:
+      - backend
