@@ -6,34 +6,44 @@ echo "Pre-start: installing dependencies, compiling contracts and exporting ABIs
 echo "=========================================="
 
 # ------------------------------
-# 1. Install backend dependencies (exact versions)
+# 0. Backend setup
 # ------------------------------
-echo "[INFO] Installing backend dependencies..."
 cd backend
-npm ci   # forces exact versions from package-lock.json
-cd ..
 
-# ------------------------------
-# 2. Install frontend dependencies (exact versions)
-# ------------------------------
-echo "[INFO] Installing frontend dependencies..."
-cd frontend
+if [ ! -f package-lock.json ]; then
+  echo "[INFO] No package-lock.json found in backend. Running npm install to generate lockfile..."
+  npm install
+fi
+
+echo "[INFO] Installing backend dependencies deterministically..."
 npm ci
-cd ..
 
 # ------------------------------
-# 3. Compile Hardhat contracts
+# 1. Compile contracts
 # ------------------------------
-echo "[INFO] Compiling contracts..."
-cd backend
 npx hardhat compile
+
 cd ..
 
 # ------------------------------
-# 4. Export ABIs to frontend
+# 2. Frontend setup
 # ------------------------------
-echo "[INFO] Exporting ABIs to frontend..."
-FRONTEND_CONTRACT_DIR="./frontend/src/contracts"
+cd frontend
+
+if [ ! -f package-lock.json ]; then
+  echo "[INFO] No package-lock.json found in frontend. Running npm install to generate lockfile..."
+  npm install
+fi
+
+echo "[INFO] Installing frontend dependencies deterministically..."
+npm ci
+
+cd ..
+
+# ------------------------------
+# 3. Export ABIs from backend to frontend
+# ------------------------------
+FRONTEND_CONTRACT_DIR="frontend/src/contracts"
 mkdir -p $FRONTEND_CONTRACT_DIR
 
 cp backend/artifacts/contracts/DAOToken.sol/DAOToken.json $FRONTEND_CONTRACT_DIR/
@@ -41,4 +51,8 @@ cp backend/artifacts/contracts/Governance.sol/Governance.json $FRONTEND_CONTRACT
 cp backend/artifacts/contracts/Treasury.sol/Treasury.json $FRONTEND_CONTRACT_DIR/
 cp backend/artifacts/contracts/ProposalExecutor.sol/ProposalExecutor.json $FRONTEND_CONTRACT_DIR/
 
-echo "[OK] Pre-start completed. ABIs exported to frontend."
+echo "[INFO] ABIs exported to frontend."
+
+echo "=========================================="
+echo "Pre-start complete. Backend and frontend ready."
+echo "=========================================="
