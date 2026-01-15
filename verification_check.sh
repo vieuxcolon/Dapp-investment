@@ -74,4 +74,32 @@ fi
 if command -v docker &>/dev/null; then
     echo "[OK] Docker version $(docker --version) detected"
 else
-    echo "[WARN] Docker not found. Plea
+    echo "[WARN] Docker not found. Please install Docker."
+fi
+
+# ----------------------------
+# 6. Check Docker Compose
+# ----------------------------
+if command -v docker-compose &>/dev/null || command -v docker compose &>/dev/null; then
+    echo "[OK] Docker Compose detected"
+else
+    echo "[WARN] Docker Compose not found. Please install Docker Compose."
+fi
+
+# ----------------------------
+# 7. Check Hardhat listed in backend/package.json
+# ----------------------------
+if [ -f "backend/package.json" ]; then
+    if grep -q '"hardhat"' backend/package.json; then
+        echo "[OK] Hardhat already listed in backend/package.json"
+    else
+        echo "[WARN] Hardhat not listed in backend/package.json"
+    fi
+else
+    echo "[WARN] backend/package.json not found"
+fi
+
+echo "=========================================="
+echo "Host environment remediation complete!"
+echo "You should now be able to run ./pre-start.sh and ./start.sh"
+echo "=========================================="
