@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { treasury } from "../utils/contractInteraction";
+import { ethers } from "ethers";
+import { getContracts } from "../utils/contractInteraction";
 
 export default function TreasuryView() {
-  const [balance, setBalance] = useState(0);
-
-  const loadBalance = async () => {
-    setBalance(await treasury.getBalance());
-  };
+  const [balance, setBalance] = useState("0");
 
   useEffect(() => {
+    async function loadBalance() {
+      const { treasury } = await getContracts();
+      setBalance(await treasury.getBalance());
+    }
     loadBalance();
   }, []);
 
