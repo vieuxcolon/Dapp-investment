@@ -1,20 +1,23 @@
-
 import React, { useEffect, useState } from "react";
-import { daoToken, governance, treasury } from "../utils/contractInteraction";
+import { ethers } from "ethers";
+import { getContracts } from "../utils/contractInteraction";
 
 export default function Dashboard() {
-  const [balance, setBalance] = useState(0);
-  const [tokenBalance, setTokenBalance] = useState(0);
+  const [balance, setBalance] = useState("0");
+  const [tokenBalance, setTokenBalance] = useState("0");
   const [proposalCount, setProposalCount] = useState(0);
 
-  const loadData = async () => {
-    const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
-    setTokenBalance(await daoToken.balanceOf(accounts[0]));
-    setBalance(await treasury.getBalance());
-    setProposalCount(await governance.proposalCount());
-  };
-
   useEffect(() => {
+    async function loadData() {
+      const { daoToken, governance, treasury } = await getContracts();
+      const signer = await daoToken.runner;
+      const address = await signer.getAddress();
+
+      setTokenBalance(await daoToken.balanceOf(address));
+      setBalance(await treasury.getBalance());
+      setProposalCount(await governance.proposalCount());
+    }
+
     loadData();
   }, []);
 
