@@ -1,21 +1,22 @@
-
 import React, { useState } from "react";
-import { executor } from "../utils/contractInteraction";
+import { getContracts } from "../utils/contractInteraction";
 
 export default function ExecuteProposal() {
   const [proposalId, setProposalId] = useState("");
   const [recipient, setRecipient] = useState("");
 
-  const execute = async () => {
-    await executor.executeProposal(proposalId, recipient);
+  async function execute() {
+    const { executor } = await getContracts();
+    const tx = await executor.executeProposal(proposalId, recipient);
+    await tx.wait();
     alert("Proposal executed!");
-  };
+  }
 
   return (
     <div>
       <h3>Execute Proposal</h3>
-      <input placeholder="Proposal ID" value={proposalId} onChange={(e) => setProposalId(e.target.value)} />
-      <input placeholder="Recipient Address" value={recipient} onChange={(e) => setRecipient(e.target.value)} />
+      <input value={proposalId} onChange={(e) => setProposalId(e.target.value)} placeholder="Proposal ID" />
+      <input value={recipient} onChange={(e) => setRecipient(e.target.value)} placeholder="Recipient Address" />
       <button onClick={execute}>Execute</button>
     </div>
   );
