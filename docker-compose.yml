@@ -3,22 +3,24 @@ services:
     build:
       context: .
       dockerfile: docker/backend.Dockerfile
+    container_name: dao-backend
     ports:
       - "8545:8545"
-    environment:
-      - PRIVATE_KEY=${PRIVATE_KEY}
-      - LOCAL_RPC_URL=${LOCAL_RPC_URL}
+    env_file:
+      - .env
     volumes:
       - ./backend:/app/backend
-    command: ["npx", "hardhat", "node"]
 
   frontend:
     build:
       context: .
       dockerfile: docker/frontend.Dockerfile
+    container_name: dao-frontend
     ports:
       - "3000:3000"
     env_file:
       - frontend/.env
+    depends_on:
+      - backend
     volumes:
       - ./frontend:/app/frontend
