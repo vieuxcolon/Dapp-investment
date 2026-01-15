@@ -13,9 +13,9 @@ docker compose build --no-cache
 echo "Step 2: Starting backend container..."
 docker compose up -d backend
 
-# Wait for Hardhat node
+# Wait for Hardhat node to be ready
 echo "Waiting 5 seconds for Hardhat node..."
-sleep 15
+sleep 5
 
 # Step 3: Compile contracts & export ABIs
 echo "Step 3: Compiling contracts and exporting ABIs..."
