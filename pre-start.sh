@@ -6,8 +6,11 @@ echo "Pre-start: compiling contracts and exporting ABIs..."
 echo "=========================================="
 
 cd backend
+
+# Compile contracts
 npx hardhat compile
 
+# Export ABIs to frontend
 FRONTEND_CONTRACT_DIR="../frontend/src/contracts"
 mkdir -p $FRONTEND_CONTRACT_DIR
 
