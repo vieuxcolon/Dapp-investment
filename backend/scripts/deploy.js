@@ -1,37 +1,42 @@
-
 import fs from "fs";
-import hre from "hardhat";
+import path from "path";
+import { ethers } from "hardhat";
 
 async function main() {
-  const [deployer] = await hre.ethers.getSigners();
+  //  Deploy contracts
+  const [deployer] = await ethers.getSigners();
   console.log("Deploying contracts with account:", deployer.address);
 
-  const DAOToken = await hre.ethers.deployContract("DAOToken");
+  const DAOToken = await ethers.deployContract("DAOToken");
   await DAOToken.waitForDeployment();
 
-  const Treasury = await hre.ethers.deployContract("Treasury");
-  await Treasury.waitForDeployment();
-
-  const Governance = await hre.ethers.deployContract("Governance", [DAOToken.target, Treasury.target]);
+  const Governance = await ethers.deployContract("Governance", [DAOToken.target]);
   await Governance.waitForDeployment();
 
-  const ProposalExecutor = await hre.ethers.deployContract("ProposalExecutor", [Governance.target, Treasury.target]);
+  const Treasury = await ethers.deployContract("Treasury", [DAOToken.target, Governance.target]);
+  await Treasury.waitForDeployment();
+
+  const ProposalExecutor = await ethers.deployContract("ProposalExecutor", [Governance.target, Treasury.target]);
   await ProposalExecutor.waitForDeployment();
 
-  // Write addresses to JSON
-  const addresses = {
-    DAOToken: DAOToken.target,
-    Governance: Governance.target,
-    Treasury: Treasury.target,
-    ProposalExecutor: ProposalExecutor.target
-  };
+  console.log("Contracts deployed:");
+  console.log("DAOToken:", DAOToken.target);
+  console.log("Governance:", Governance.target);
+  console.log("Treasury:", Treasury.target);
+  console.log("ProposalExecutor:", ProposalExecutor.target);
 
-  fs.writeFileSync(
-    "./frontend/src/contracts-address.json",
-    JSON.stringify(addresses, null, 2)
-  );
+  //  Update frontend .env file
+  const envPath = path.resolve(__dirname, "../../frontend/.env");
+  const envContent = `
+REACT_APP_RPC_URL=http://localhost:8545
+REACT_APP_DAOTOKEN_ADDRESS=${DAOToken.target}
+REACT_APP_GOVERNANCE_ADDRESS=${Governance.target}
+REACT_APP_TREASURY_ADDRESS=${Treasury.target}
+REACT_APP_PROPOSALEXECUTOR_ADDRESS=${ProposalExecutor.target}
+  `.trim();
 
-  console.log("Contracts deployed and addresses saved to frontend/src/contracts-address.json");
+  fs.writeFileSync(envPath, envContent, "utf-8");
+  console.log(" Frontend .env updated successfully!");
 }
 
 main().catch((error) => {
