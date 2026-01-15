@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.28;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./DAOToken.sol";
 import "./Treasury.sol";
 
-/// @title Governance - Submit & Vote on DAO Proposals
 contract Governance is Ownable {
     DAOToken public daoToken;
     Treasury public treasury;
@@ -20,7 +19,7 @@ contract Governance is Ownable {
         ProposalType proposalType;
         address proposer;
         string description;
-        uint256 amount; // Funds requested or trade amount
+        uint256 amount;
         uint256 yesVotes;
         uint256 noVotes;
         ProposalState state;
@@ -35,12 +34,11 @@ contract Governance is Ownable {
     event VoteCast(uint256 indexed id, address voter, bool support);
     event ProposalExecuted(uint256 indexed id);
 
-    constructor(address _daoToken, address _treasury) {
+    constructor(address _daoToken, address payable _treasury) {
         daoToken = DAOToken(_daoToken);
         treasury = Treasury(_treasury);
     }
 
-    /// @notice Submit a new proposal
     function submitProposal(
         ProposalType _type,
         string calldata _description,
@@ -57,12 +55,11 @@ contract Governance is Ownable {
             noVotes: 0,
             state: ProposalState.Active,
             startTime: block.timestamp,
-            endTime: block.timestamp + 3 days // Voting period
+            endTime: block.timestamp + 3 days
         });
         emit ProposalCreated(proposalCount, _type, msg.sender);
     }
 
-    /// @notice Vote on a proposal
     function vote(uint256 _proposalId, bool support) external {
         Proposal storage proposal = proposals[_proposalId];
         require(block.timestamp <= proposal.endTime, "Voting period ended");
@@ -81,15 +78,14 @@ contract Governance is Ownable {
         emit VoteCast(_proposalId, msg.sender, support);
     }
 
-    /// @notice Check if a proposal passed
     function proposalPassed(uint256 _proposalId) public view returns (bool) {
         Proposal storage proposal = proposals[_proposalId];
         return proposal.yesVotes > proposal.noVotes;
     }
 
-    /// @notice Mark proposal as executed (actual execution happens in ProposalExecutor)
     function markExecuted(uint256 _proposalId) external onlyOwner {
         proposals[_proposalId].state = ProposalState.Executed;
         emit ProposalExecuted(_proposalId);
     }
 }
+
