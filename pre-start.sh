@@ -14,12 +14,19 @@ echo "=========================================="
 echo "[INFO] Running pre-check.sh"
 ./pre-check.sh
 
-# Ensure Docker images are built
-echo "[INFO] Building backend Docker image..."
-docker build -t dapp-backend -f backend.Dockerfile ./backend
+# Build backend Docker image (no cache)
+echo "[INFO] Building backend Docker image (no cache)..."
+docker build --no-cache \
+  -t dapp-backend \
+  -f docker/backend.Dockerfile \
+  .
 
-echo "[INFO] Building frontend Docker image..."
-docker build -t dapp-frontend -f frontend.Dockerfile ./frontend
+# Build frontend Docker image (no cache)
+echo "[INFO] Building frontend Docker image (no cache)..."
+docker build --no-cache \
+  -t dapp-frontend \
+  -f docker/frontend.Dockerfile \
+  .
 
 echo "=========================================="
 echo "Pre-start completed successfully!"
