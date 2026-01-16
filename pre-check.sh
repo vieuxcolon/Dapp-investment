@@ -1,128 +1,110 @@
 #!/bin/bash
+# pre-check.sh
+# ================================
+# Verify host environment for Dapp Investment project
+# Ensures Node, npm, Hardhat, Docker, and dependencies are correct
+# ================================
+
 set -e
 
-REQUIRED_NODE_MAJOR=16
-REQUIRED_NODE_VERSION="16.20.0"  # Minimum recommended for Hardhat 2.x
-
 echo "=========================================="
-echo "Verifying and remediating host environment"
+echo "Pre-check script for Dapp Investment Dapp"
 echo "=========================================="
 
-# ----------------------------
-# 1. Clear apt/dpkg locks
-# ----------------------------
-echo "[INFO] Checking for other apt/dpkg processes..."
-sudo fuser -v /var/lib/dpkg/lock || true
-sudo rm -f /var/lib/dpkg/lock
-sudo dpkg --configure -a
-echo "[INFO] apt/dpkg locks cleared. Continuing..."
+# -------------------------
+# 1. Check Node.js version
+# -------------------------
+REQUIRED_NODE="20"
+NODE_VERSION=$(node -v | cut -d. -f1 | tr -d 'v')
 
-# ----------------------------
-# 2. Check Node.js
-# ----------------------------
-INSTALL_NODE=false
-if command -v node &>/dev/null; then
-    NODE_VERSION=$(node -v | sed 's/v//')
-    NODE_MAJOR=$(echo $NODE_VERSION | cut -d. -f1)
-    echo "[INFO] Node.js version detected: $NODE_VERSION"
-
-    if [ "$NODE_MAJOR" -lt "$REQUIRED_NODE_MAJOR" ]; then
-        echo "[WARN] Node.js version is too old. Removing current version..."
-        sudo apt remove -y nodejs
-        sudo apt autoremove -y
-        INSTALL_NODE=true
-    fi
+if [ "$NODE_VERSION" -lt "$REQUIRED_NODE" ]; then
+  echo "[ERROR] Node.js version $REQUIRED_NODE.x or higher required. Found $(node -v)"
+  exit 1
 else
-    echo "[WARN] Node.js not found. Will install required version."
-    INSTALL_NODE=true
+  echo "[OK] Node.js version $(node -v)"
 fi
 
-if [ "$INSTALL_NODE" = true ]; then
-    echo "[INFO] Installing Node.js $REQUIRED_NODE_VERSION..."
-    curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
-    sudo apt install -y nodejs
-fi
+# -------------------------
+# 2. Check npm version
+# -------------------------
+REQUIRED_NPM="9"
+NPM_VERSION=$(npm -v | cut -d. -f1)
 
-echo "[INFO] Node.js version now: $(node -v)"
-echo "[INFO] npm version: $(npm -v)"
-
-# ----------------------------
-# 3. Check npm
-# ----------------------------
-if ! command -v npm &>/dev/null; then
-    echo "[INFO] npm not found. Installing..."
-    sudo apt install -y npm
+if [ "$NPM_VERSION" -lt "$REQUIRED_NPM" ]; then
+  echo "[ERROR] npm version $REQUIRED_NPM.x or higher required. Found $(npm -v)"
+  exit 1
 else
-    echo "[OK] npm detected: $(npm -v)"
+  echo "[OK] npm version $(npm -v)"
 fi
 
-# ----------------------------
-# 4. Check npx
-# ----------------------------
-if ! command -v npx &>/dev/null; then
-    echo "[INFO] npx not found. Installing..."
-    sudo npm install -g npx
+# -------------------------
+# 3. Check Hardhat
+# -------------------------
+if command -v npx >/dev/null 2>&1; then
+  HH_VERSION=$(npx hardhat --version 2>/dev/null || echo "not found")
+  if [[ "$HH_VERSION" == "not found" ]]; then
+    echo "[WARN] Hardhat not installed. Installing Hardhat 3.x..."
+    npm install --save-dev hardhat@3.1.4 @nomicfoundation/hardhat-toolbox@3.0.0 \
+      @nomicfoundation/hardhat-ethers@3.1.3 @nomicfoundation/hardhat-chai-matchers@2.1.2 \
+      chai@^4.2.0 --legacy-peer-deps
+    echo "[OK] Hardhat installed successfully"
+  else
+    echo "[OK] Hardhat version $HH_VERSION"
+  fi
 else
-    echo "[OK] npx detected: $(npx -v)"
+  echo "[ERROR] npx not found. Ensure npm is installed correctly."
+  exit 1
 fi
 
-# ----------------------------
-# 5. Docker & Docker Compose
-# ----------------------------
-if command -v docker &>/dev/null; then
-    echo "[OK] Docker version $(docker --version) detected"
+# -------------------------
+# 4. Check Docker
+# -------------------------
+if ! command -v docker >/dev/null 2>&1; then
+  echo "[ERROR] Docker not installed. Please install Docker."
+  exit 1
 else
-    echo "[WARN] Docker not found. Please install Docker."
+  DOCKER_VER=$(docker --version)
+  echo "[OK] Docker found: $DOCKER_VER"
 fi
 
-if command -v docker-compose &>/dev/null || command -v docker compose &>/dev/null; then
-    echo "[OK] Docker Compose detected"
+# -------------------------
+# 5. Check Docker Compose
+# -------------------------
+if ! command -v docker-compose >/dev/null 2>&1; then
+  echo "[ERROR] docker-compose not installed. Please install docker-compose."
+  exit 1
 else
-    echo "[WARN] Docker Compose not found. Please install Docker Compose."
+  DC_VER=$(docker-compose --version)
+  echo "[OK] Docker Compose found: $DC_VER"
 fi
 
-# ----------------------------
-# 6. Ensure Hardhat 2.x in backend
-# ----------------------------
-BACKEND_DIR="./backend"
-cd "$BACKEND_DIR"
-
-if [ -f package.json ]; then
-    if grep -q '"hardhat"' package.json; then
-        echo "[INFO] Hardhat found in package.json"
-
-        # Force install compatible Hardhat 2.x and plugins
-        echo "[INFO] Installing Hardhat 2.x stack..."
-        npm install --save-dev "hardhat@^2.28.3" "@nomiclabs/hardhat-ethers@^2.2.3" ethers@^5.7.2
-    else
-        echo "[INFO] Hardhat not found. Installing Hardhat 2.x stack..."
-        npm init -y
-        npm install --save-dev "hardhat@^2.28.3" "@nomiclabs/hardhat-ethers@^2.2.3" ethers@^5.7.2
-    fi
+# -------------------------
+# 6. Check .env file
+# -------------------------
+if [ ! -f ".env" ]; then
+  echo "[WARN] .env file not found. Creating a template .env"
+  cp .env.example .env
 else
-    echo "[WARN] backend/package.json not found. Creating and installing dependencies..."
-    npm init -y
-    npm install --save-dev "hardhat@^2.28.3" "@nomiclabs/hardhat-ethers@^2.2.3" ethers@^5.7.2
+  echo "[OK] .env file found"
 fi
 
-# Ensure hardhat.config.js exists
-if [ ! -f hardhat.config.js ]; then
-    cat <<EOL > hardhat.config.js
-/** @type import('hardhat/config').HardhatUserConfig */
-require("@nomiclabs/hardhat-ethers");
+# -------------------------
+# 7. Check frontend & backend dependencies
+# -------------------------
+for DIR in backend frontend; do
+  echo "Checking dependencies in $DIR..."
+  if [ -f "$DIR/package.json" ]; then
+    (cd "$DIR" && npm install --legacy-peer-deps)
+    echo "[OK] Dependencies installed in $DIR"
+  else
+    echo "[WARN] $DIR/package.json not found"
+  fi
+done
 
-module.exports = {
-  solidity: {
-    version: "0.8.19",
-    settings: { optimizer: { enabled: true, runs: 200 } },
-  },
-};
-EOL
-    echo "[INFO] Created hardhat.config.js for Hardhat 2.x"
-fi
-
-cd - >/dev/null
-
+# -------------------------
+# 8. Summary
+# -------------------------
 echo "=========================================="
-echo "Host environment verification complete!"
+echo "Pre-check completed successfully!"
+echo "You can now run ./update-repo.sh, ./pre-start.sh or ./start.sh safely."
 echo "=========================================="
