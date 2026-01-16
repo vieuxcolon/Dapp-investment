@@ -3,11 +3,11 @@ services:
     build:
       context: .
       dockerfile: docker/backend.Dockerfile
-    container_name: dao-backend
-    ports:
-      - "8545:8545"
+    container_name: dapp-backend
     env_file:
       - .env
+    ports:
+      - "8545:8545"
     volumes:
       - ./backend:/app/backend
     command: ["npx", "hardhat", "node"]
@@ -16,12 +16,15 @@ services:
     build:
       context: .
       dockerfile: docker/frontend.Dockerfile
-    container_name: dao-frontend
+    container_name: dapp-frontend
+    env_file:
+      - .env
     ports:
       - "3000:3000"
-    env_file:
-      - frontend/.env
-    depends_on:
-      - backend
     volumes:
       - ./frontend:/app/frontend
+    command: ["dotenv", "-e", ".env", "--", "npm", "start"]
+
+networks:
+  default:
+    driver: bridge
