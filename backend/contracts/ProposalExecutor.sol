@@ -1,34 +1,35 @@
+
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 import "./Governance.sol";
-import "./Treasury.sol";
 
-/// @title ProposalExecutor - Executes approved DAO proposals
+/// @title Proposal Executor
+/// @notice Executes proposals created in the Governance contract
 contract ProposalExecutor {
     Governance public governance;
-    Treasury public treasury;
 
-    event StartupFunded(uint256 proposalId, address startup, uint256 amount);
-    event AssetTraded(uint256 proposalId, string tradeDetails);
-
-    constructor(Governance _governance, Treasury _treasury) {
-        governance = _governance;
-        treasury = _treasury;
+    /// @notice Sets the governance contract
+    /// @param _governance The address of the deployed Governance contract
+    constructor(address _governance) {
+        governance = Governance(_governance);
     }
 
-    function executeProposal(uint256 _proposalId, address payable _recipient) external {
-        Governance.Proposal storage proposal = governance.proposals(_proposalId);
-        require(proposal.state == Governance.ProposalState.Active, "Proposal not active");
-        require(governance.proposalPassed(_proposalId), "Proposal did not pass");
+    /// @notice Execute a proposal by ID
+    /// @param _proposalId The ID of the proposal to execute
+    function executeProposal(uint256 _proposalId) external {
+        // Get a copy of the proposal in memory
+        Governance.Proposal memory proposal = governance.getProposal(_proposalId);
 
-        if (proposal.proposalType == Governance.ProposalType.Startup) {
-            treasury.transferFunds(_recipient, proposal.amount);
-            emit StartupFunded(_proposalId, _recipient, proposal.amount);
-        } else if (proposal.proposalType == Governance.ProposalType.AssetTrade) {
-            emit AssetTraded(_proposalId, "Execute asset trade logic here");
-        }
+        // Ensure the proposal is executable
+        require(!proposal.executed, "Proposal already executed");
+        require(proposal.voteCount > 0, "Proposal has no votes");
 
+        // TODO: Add your actual execution logic here
+        // Example: call Treasury to transfer funds, trigger other actions, etc.
+        // Example: treasury.transfer(proposal.recipient, proposal.amount);
+
+        // Mark the proposal as executed in the Governance contract
         governance.markExecuted(_proposalId);
     }
 }
