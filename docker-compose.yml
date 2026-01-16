@@ -13,7 +13,6 @@ services:
       - ./packages/contracts/deployments:/workspace/contracts/deployments
       - ./packages/backend:/workspace/backend
       - ./packages/frontend:/workspace/frontend
-      - ./run-all.sh:/workspace/run-all.sh
     environment:
       - HARDHAT_RPC=http://localhost:8545
       - REACT_APP_CONTRACTS_JSON=/workspace/contracts/deployments/addresses.json
