@@ -1,49 +1,74 @@
 #!/bin/bash
+# update-repo.sh
+# ================================
+# Updates backend repository dependencies and Hardhat 3.x setup
+# ================================
+
 set -e
 
 echo "=========================================="
-echo "Starting Hardhat 3.x repo upgrade workflow"
+echo "Update Repo Script - Backend"
 echo "=========================================="
 
-# 1️⃣ Backup existing config and package files
+# -------------------------
+# 1. Backup package files
+# -------------------------
 BACKUP_DIR="backup_hh2_$(date +%Y%m%d%H%M%S)"
 mkdir -p "$BACKUP_DIR"
 
-echo "[INFO] Backing up package.json and package-lock.json to $BACKUP_DIR..."
-for f in package.json package-lock.json hardhat.config.js; do
-    if [ -f "$f" ]; then
-        cp "$f" "$BACKUP_DIR/"
-        echo "[INFO] Backed up $f"
-    else
-        echo "[WARN] $f not found, skipping backup."
-    fi
+for FILE in package.json package-lock.json hardhat.config.js; do
+  if [ -f "$FILE" ]; then
+    cp "$FILE" "$BACKUP_DIR/"
+    echo "[OK] Backed up $FILE to $BACKUP_DIR/"
+  fi
 done
 
-# 2️⃣ Clean node_modules and previous lockfile
-echo "[INFO] Cleaning backend node_modules and package-lock.json..."
+# -------------------------
+# 2. Clean node_modules
+# -------------------------
+echo "[INFO] Removing old node_modules and package-lock.json"
 rm -rf node_modules package-lock.json
 
-# 3️⃣ Install Hardhat 3.x and Toolbox + necessary plugins
-echo "[INFO] Installing Hardhat 3.x and Toolbox with compatible plugins..."
+# -------------------------
+# 3. Install Hardhat 3.x & plugins
+# -------------------------
+echo "[INFO] Installing Hardhat 3.x with compatible plugins"
 npm install --save-dev \
   hardhat@3.1.4 \
   @nomicfoundation/hardhat-toolbox@3.0.0 \
   @nomicfoundation/hardhat-ethers@3.1.3 \
-  @nomicfoundation/hardhat-chai-matchers@3.0.0 \
+  @nomicfoundation/hardhat-chai-matchers@2.1.2 \
+  chai@^4.2.0 \
   --legacy-peer-deps
 
-# 4️⃣ Generate new hardhat.config.js if not present
+echo "[OK] Hardhat 3.x and plugins installed successfully"
+
+# -------------------------
+# 4. Ensure hardhat.config.js exists
+# -------------------------
 if [ ! -f hardhat.config.js ]; then
-    echo "[INFO] Creating new hardhat.config.js for Hardhat 3.x..."
-    npx hardhat init --force --no-interactive
+  echo "[WARN] hardhat.config.js not found. Creating default config..."
+  cat > hardhat.config.js <<EOL
+import "@nomicfoundation/hardhat-toolbox";
+
+/** @type import('hardhat/config').HardhatUserConfig */
+const config = {
+  solidity: "0.8.20",
+  paths: {
+    sources: "./contracts",
+    tests: "./test",
+    cache: "./cache",
+    artifacts: "./artifacts",
+  },
+};
+
+export default config;
+EOL
+  echo "[OK] Default hardhat.config.js created"
 else
-    echo "[INFO] Existing hardhat.config.js found, skipping init."
+  echo "[OK] hardhat.config.js already exists"
 fi
 
-# 5️⃣ Compile contracts
-echo "[INFO] Compiling contracts with Hardhat 3.x..."
-npx hardhat compile
-
 echo "=========================================="
-echo "Hardhat 3.x upgrade workflow complete."
+echo "Backend repo updated successfully!"
 echo "=========================================="
