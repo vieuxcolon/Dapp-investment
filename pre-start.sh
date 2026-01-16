@@ -1,41 +1,27 @@
 #!/bin/bash
+# pre-start.sh
+# ================================
+# Prepares Docker environment and ensures all dependencies are correct
+# ================================
+
 set -e
 
 echo "=========================================="
-echo "Pre-start: validating, compiling, exporting ABIs"
+echo "Pre-Start Script - Dapp Investment"
 echo "=========================================="
 
-BACKEND_DIR="./backend"
-FRONTEND_DIR="./frontend/src/contracts"
+# Run pre-check
+echo "[INFO] Running pre-check.sh"
+./pre-check.sh
 
-# ----------------------------
-# 1. Backend dependencies (deterministic)
-# ----------------------------
-cd "$BACKEND_DIR"
-echo "[INFO] Installing deterministic dependencies..."
-npm ci
+# Ensure Docker images are built
+echo "[INFO] Building backend Docker image..."
+docker build -t dapp-backend -f backend.Dockerfile ./backend
 
-# ----------------------------
-# 2. Compile Hardhat contracts
-# ----------------------------
-echo "[INFO] Compiling contracts..."
-npx hardhat clean
-npx hardhat compile
+echo "[INFO] Building frontend Docker image..."
+docker build -t dapp-frontend -f frontend.Dockerfile ./frontend
 
-cd - >/dev/null
-
-# ----------------------------
-# 3. Export ABIs
-# ----------------------------
-mkdir -p "$FRONTEND_DIR"
-for contract in DAOToken Governance Treasury ProposalExecutor; do
-    src="$BACKEND_DIR/artifacts/contracts/$contract.sol/$contract.json"
-    if [ -f "$src" ]; then
-        cp "$src" "$FRONTEND_DIR/"
-        echo "[INFO] Exported $contract ABI to frontend"
-    else
-        echo "[WARN] $contract artifact not found, skipping..."
-    fi
-done
-
-echo "[OK] Pre-start phase complete."
+echo "=========================================="
+echo "Pre-start completed successfully!"
+echo "You can now run ./start.sh to launch the Dapp"
+echo "=========================================="
