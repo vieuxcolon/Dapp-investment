@@ -17,10 +17,9 @@ if [ ! -d "backend/node_modules" ] || [ ! -d "frontend/node_modules" ]; then
 fi
 
 # Pass .env file explicitly to Docker Compose
-echo "[INFO] Launching Docker Compose..."
-docker-compose --env-file .env up --build
+echo "[INFO] Launching Docker Compose (no cache)..."
+docker-compose --env-file .env up --build --no-cache
 
 echo "=========================================="
 echo "Dapp Investment started successfully!"
 echo "=========================================="
-
