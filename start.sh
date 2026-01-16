@@ -1,48 +1,26 @@
 #!/bin/bash
+# start.sh
+# ================================
+# Launches backend and frontend using Docker Compose
+# ================================
+
 set -e
 
 echo "=========================================="
-echo "Starting Investment DAO DApp"
+echo "Starting Dapp Investment (Docker Compose)"
 echo "=========================================="
 
-# ----------------------------
-# 1. Run pre-start (install + compile + export ABIs)
-# ----------------------------
-./pre-start.sh
+# Ensure pre-start has been run
+if [ ! -d "backend/node_modules" ] || [ ! -d "frontend/node_modules" ]; then
+  echo "[WARN] Dependencies not installed. Running pre-start.sh first..."
+  ./pre-start.sh
+fi
 
-# ----------------------------
-# 2. Build & start backend container
-# ----------------------------
+# Pass .env file explicitly to Docker Compose
+echo "[INFO] Launching Docker Compose..."
+docker-compose --env-file .env up --build
+
 echo "=========================================="
-echo "Building and starting backend container..."
-docker compose build --no-cache backend
-docker compose up -d backend
-
-echo "[INFO] Waiting 15 seconds for backend to initialize..."
-sleep 15
-
-# ----------------------------
-# 3. Deploy contracts via Hardhat
-# ----------------------------
+echo "Dapp Investment started successfully!"
 echo "=========================================="
-echo "Deploying contracts..."
-docker compose run --rm backend npx hardhat run scripts/deploy.js --network localhost
-
-# ----------------------------
-# 4. Build & start frontend container
-# ----------------------------
-echo "=========================================="
-echo "Building and starting frontend container..."
-docker compose build --no-cache frontend
-docker compose up -d frontend
-
-# ----------------------------
-# 5. Show container status
-# ----------------------------
-echo "=========================================="
-docker ps --filter "name=dao-"
-
-echo "DApp started successfully!"
-echo "Frontend: http://localhost:3000"
-echo "Backend Hardhat Node RPC: http://localhost:8545"
 
